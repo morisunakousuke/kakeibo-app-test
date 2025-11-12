@@ -230,40 +230,38 @@ export function setToday(dateSelector = '#datepicker', monthSelector = '#datemon
 // ==============================
 export function renderKakeiList(selector, data, formatNum) {
   const tbody = document.querySelector(selector);
+  if (!tbody) return;
   tbody.innerHTML = '';
-  if (!data) return;
 
-  data.forEach(r => {
+  data.forEach(row => {
     const tr = document.createElement('tr');
 
-    tr.innerHTML = `
-      <td><input type="checkbox" class="row-check" data-date="${r.date}" data-seq="${r.seq}"></td>
-      <td>${r.date ? r.date.slice(5) : ''}</td>
-      <td>${r.categoryname || ''}</td>
-      <td>${r.content || ''}</td>
-      <td>${r.payername || ''}</td>
-      <td class="numcell">${formatNum(r.income)}</td>
-      <td class="numcell">${formatNum(r.meal)}</td>
-      <td class="numcell">${formatNum(r.supplies)}</td>
-      <td class="numcell">${formatNum(r.play)}</td>
-      <td class="numcell">${formatNum(r.infra)}</td>
-      <td class="numcell">${formatNum(r.education)}</td>
-      <td class="numcell">${formatNum(r.others)}</td>
-    `;
+    for (const key in row) {
+      const td = document.createElement('td');
+      const value = row[key];
 
-    // 固定費表(#koteiTable)なら、空欄セルをグレーにする
-    if (selector === '#koteiTable tbody') {
-      tr.querySelectorAll('.numcell').forEach(td => {
-        if (!td.textContent || td.textContent === '0') {
-          td.style.backgroundColor = '#f0f0f0';
-          td.style.color = '#888';
+      if (['income','meal','supplies','play','infra','education','others'].includes(key)) {
+        if (!value || value === 0) {
+          td.textContent = '';
+          td.classList.add('zero-cell');
+          // 固定費表の場合のみグレーアウト
+          if (selector.includes('koteiTable')) {
+            td.style.backgroundColor = '#e0e0e0';
+          }
+        } else {
+          td.textContent = formatNum(value);
         }
-      });
+      } else {
+        td.textContent = value ?? '';
+      }
+
+      tr.appendChild(td);
     }
 
     tbody.appendChild(tr);
   });
 }
+
 
 // ==============================
 // 🔸 個人負担表描画
