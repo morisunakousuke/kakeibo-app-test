@@ -228,23 +228,72 @@ export function setToday(dateSelector = '#datepicker', monthSelector = '#datemon
 // ==============================
 // 🔸 家計簿リスト描画（編集・削除ボタン付き）
 // ==============================
+ChatGPT:
+
+ありがとうございます。
+固定費表・変動費表が「崩れている」原因は、今アップロードされている common.js の renderKakeiList() 関数 にあります。
+
+🧩 問題の箇所
+
+renderKakeiList() のこの部分です👇
+
+for (const key in row) {
+  const td = document.createElement('td');
+  const value = row[key];
+
+  if (['income','meal','supplies','play','infra','education','others'].includes(key)) {
+    if (!value || value === 0) {
+      td.textContent = '';
+      td.classList.add('zero-cell');
+      // 固定費表の場合のみグレーアウト
+      if (selector.includes('koteiTable')) {
+        td.style.backgroundColor = '#e0e0e0';
+      }
+    } else {
+      td.textContent = formatNum(value);
+    }
+  } else {
+    td.textContent = value ?? '';
+  }
+
+  tr.appendChild(td);
+}
+
+
+このままだと Supabase の kakeicontent テーブル全列（seq や fixedcostflg など）をそのまま描画するため、
+列数が一致せず表が崩れます。
+
+✅ 改善版：固定費・変動費それぞれの表示列を明示的に定義
+
+以下のように修正してください（common.js 内の renderKakeiList() を丸ごと置き換え）。
+
+// ==============================
+// 🔸 家計簿リスト描画（編集・削除ボタン付き）
+// ==============================
 export function renderKakeiList(selector, data, formatNum) {
   const tbody = document.querySelector(selector);
   if (!tbody) return;
   tbody.innerHTML = '';
 
+  // 表示するカラムの順序を明示的に指定
+  const displayCols = [
+    'date', 'categoryid', 'content', 'payerid',
+    'income', 'meal', 'supplies', 'play', 'infra', 'education', 'others'
+  ];
+
   data.forEach(row => {
     const tr = document.createElement('tr');
 
-    for (const key in row) {
+    displayCols.forEach(col => {
       const td = document.createElement('td');
-      const value = row[key];
+      const value = row[col];
 
-      if (['income','meal','supplies','play','infra','education','others'].includes(key)) {
+      // 金額系の処理
+      if (['income','meal','supplies','play','infra','education','others'].includes(col)) {
         if (!value || value === 0) {
           td.textContent = '';
           td.classList.add('zero-cell');
-          // 固定費表の場合のみグレーアウト
+          // 固定費表ならグレーアウト
           if (selector.includes('koteiTable')) {
             td.style.backgroundColor = '#e0e0e0';
           }
@@ -256,7 +305,7 @@ export function renderKakeiList(selector, data, formatNum) {
       }
 
       tr.appendChild(td);
-    }
+    });
 
     tbody.appendChild(tr);
   });
